@@ -340,7 +340,9 @@ var LibraryEmbind = {
     }
 
     print() {
-      const out = [];
+      // Parse the settings provided as parameters
+      const settings = JSON.parse(Buffer.from(process.argv[2], 'base64').toString());
+      const out = ['/// <reference types="emscripten" />\n\n'];
       for (const def of this.definitions) {
         if (!def.print) {
           continue;
@@ -348,14 +350,23 @@ var LibraryEmbind = {
         def.print(this.typeToJsName.bind(this), out);
       }
       // Print module definitions
-      out.push('export interface MainModule {\n');
+      out.push('export interface MainModule extends EmscriptenModule {\n');
       for (const def of this.definitions) {
         if (!def.printModuleEntry) {
           continue;
         }
         def.printModuleEntry(this.typeToJsName.bind(this), out);
       }
+      for (const runtimeMethod of settings.EXPORTED_RUNTIME_METHODS || []) {
+        out.push(`  ${runtimeMethod}: typeof ${runtimeMethod};\n`);
+      }
       out.push('}');
+      if (settings.MODULARIZE) {
+        out.push(`\n\ndeclare const ${settings.EXPORT_NAME}: EmscriptenModuleFactory<MainModule>;`);
+      }
+      if (settings.EXPORT_ES6) {
+        out.push(`\n\nexport default ${settings.EXPORT_NAME};`);
+      }
       console.log(out.join(''));
     }
   },

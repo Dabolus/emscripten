@@ -1945,12 +1945,14 @@ def run_embind_gen(wasm_target, js_syms, extra_settings):
   # The Wasm outfile may be modified by emscripten.run, so use a temporary file.
   outfile_wasm = in_temp('tsgen_a.out.wasm')
   emscripten.run(wasm_target, outfile_wasm, outfile_js, js_syms, False)
+  # Provide the original settings to the TS generation program.
+  js_args = [base64_encode(json.dumps(original_settings).encode())]
   # Build the flags needed by Node.js to properly run the output file.
   node_args = []
   if settings.MEMORY64:
     node_args += shared.node_memory64_flags()
   # Run the generated JS file with the proper flags to generate the TypeScript bindings.
-  out = shared.run_js_tool(outfile_js, [], node_args, stdout=PIPE)
+  out = shared.run_js_tool(outfile_js, js_args, node_args, stdout=PIPE)
   settings.restore(original_settings)
   return out
 
